@@ -19,17 +19,22 @@ import numpy as np
 #The Brain with a deep-q network
 
 class Brain:
-    def __init__(self, nInputs, nOutputs, learningRate, dqnConfig=None):
+    def __init__(self, nInputs, nOutputs, learningRate, model=None, dqnConfig=None):
         self.nInputs = nInputs
         self.nOutputs = nOutputs
         self.learningRate = learningRate
-        self.model = Sequential()
-        self.model.add(Dense(units=64, activation='relu', input_shape=(self.nInputs,)))
-        self.model.add(Dense(units=16, activation='relu'))
-        self.model.add(Dense(units=8, activation='relu'))
-        self.model.add(Dense(units=nOutputs))
-        self.model.compile(optimizer=Adam(lr=self.learningRate), loss='mean_squared_error')
+        if(model == None):
+            self.model = Sequential()
+            self.model.add(Dense(units=64, activation='relu', input_shape=(self.nInputs,)))
+            self.model.add(Dense(units=16, activation='relu'))
+            self.model.add(Dense(units=8, activation='relu'))
+            self.model.add(Dense(units=nOutputs))
+            self.model.compile(optimizer=Adam(lr=self.learningRate), loss='mean_squared_error')
+        else:
+            print('Predefined model')
+            self.model = model
         if(dqnConfig != None):
+            print('Initializing DQN...')
             self.dqn = self.DeepQNetwork(dqnConfig)
 
     class DeepQNetwork:
@@ -37,7 +42,7 @@ class Brain:
             self.maxMemory = dqnConfig['maxMemory']
             self.gamma = dqnConfig['discount']
             self.dqnMemory = list()
-            self.actionMap = dqnConfig['actionMap']
+            self.invActionMap = dqnConfig['invActionMap']
         
         def storeExp(self, transition, gameOver):
             self.dqnMemory.append([transition, gameOver])
@@ -57,8 +62,8 @@ class Brain:
                 targetqs[i] = brain.model.predict(currentState)[0]   #get initial arbitrary output to be replaced by the values from bellman equation
                 #Update target q-values with calculated q-values from bellman equation for q-learning
                 if(gameOver):
-                    targetqs[i][self.actionMap[action]] = reward
+                    targetqs[i][self.invActionMap[action]] = reward
                 else:
-                    targetqs[i][self.actionMap[action]] = reward + self.gamma*np.max(brain.model.predict(nextState)[0])
+                    targetqs[i][self.invActionMap[action]] = reward + self.gamma*np.max(brain.model.predict(nextState)[0])
                 i += 1
             return (inputs,targetqs)

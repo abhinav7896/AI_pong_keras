@@ -5,7 +5,11 @@ from brain import Brain
 
 class Agent:
     def  __init__(self, nsessions, config):
-        self.brain = Brain(config['nInputs'], config['nOutputs'], config['learningRate'], config['dqnConfig'])
+        if(config['brainModel'] == None):
+            print('None model')
+            self.brain = Brain(config['nInputs'], config['nOutputs'], config['learningRate'], dqnConfig=config['dqnConfig'])
+        else:
+            self.brain = Brain(None, None, None, model=config['brainModel'], dqnConfig = config['dqnConfig'])
         self.nsessions = nsessions
         self.totalReward = 0
         self.rewards = []
@@ -20,8 +24,9 @@ class Agent:
     
     def train(self):
         session = 0
+        STAY_ACTION = 0
         UP_ACTION = 2
-        DOWN_ACTION = 3
+        DOWN_ACTION = 5
         while(session < self.nsessions):
             session += 1
             self.env.reset()
@@ -33,7 +38,8 @@ class Agent:
                 action = None
                 if(np.random.rand() <= self.epsilon):
                     # action = np.random.randint(0, 3)
-                    action = np.random.randint(UP_ACTION, DOWN_ACTION+1)
+                    # action = np.random.randint(UP_ACTION, DOWN_ACTION+1)
+                    action = np.random.choice([STAY_ACTION, UP_ACTION, DOWN_ACTION])
                     print('Exploring...')
                 else:
                     qvalues = self.brain.model.predict(currentState)[0]
@@ -61,8 +67,8 @@ class Agent:
             experience = self.brain.dqn.retrieveExp(self.batchSize, self.brain)
             inputs = experience[0]
             targetqs = experience[1]
-            for i in range(self.trainingEpochs):
-                self.brain.model.train_on_batch(inputs, targetqs)
+            # for i in range(self.trainingEpochs):
+            self.brain.model.train_on_batch(inputs, targetqs)
             
             print('Episode(Session): ' + str(session) +', Epsilon: ' + str(self.epsilon) + ', Total Reward: ' + str(self.totalReward))
             
